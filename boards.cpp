@@ -7,78 +7,25 @@
 #include "Actimetre.h"
 
 typedef enum {
-    _PIN_BUTTON = 0,
-    _PIN_LED,
+    PIN_BUTTON  = 0,
+    PIN_LEDZ    = 21,
+    PIN_LEDM    = 47,
 
-    _PIN_I2C0_SDA,
-    _PIN_I2C0_SCL,
-    _PIN_I2C0_GND,
-    _PIN_I2C0_VCC,
+    PIN_I2C_SDA = 7,
+    PIN_I2C_SCL = 8,
+    PIN_I2C_GND = 9,
+    PIN_I2C_VCC = 10,
 
-    _PIN_I2C1_SDA,
-    _PIN_I2C1_SCL,
-    _PIN_I2C1_GND,
-    _PIN_I2C1_VCC,
-
-    _PIN_MORE_GND,
-    _PIN_MORE_VCC,
-
-    PIN_MAX
+    PIN_CAM_S1  = 11,
+    PIN_CAM_S2  = 12,
+    PIN_CAM_A0  = 13,
+    
+    PIN_SYNC    = 1
 } PinName;
 
-// BOARD DEFINITIONS (See readme.txt)
+// BOARD DEFINITION
 
-static char BoardName[BOARD_TYPES][4] = {"BAD", "S3i", "S3n", "S3z", "S3m", "S2o", "C3o", "S3o"};
-
-#define DISABLE_I2C   0xFF
-#define UNPOWERED_PIN 0xFF
-const uint8_t PINS[BOARD_TYPES][PIN_MAX] = {
-    // SDA SCL GND VCC
-    // Dummy for bad
-    {0xFF, 0xFF,
-     0xFF, 0xFF, 0xFF, 0xFF,
-     0xFF, 0xFF, 0xFF, 0xFF,
-     0xFF, 0xFF},
-    // Board Type 1 (S3 mini with I2C) S3i
-    {0, 47,
-     21, 17, 0xFF, 15,
-     7, 8, 9, 14,
-     10, 0xFF},  // Pin 10 is also GND for the display
-    // Board Type 2 (S3 mini with new box) S3n
-    {0, 47,
-     13, 11, 10, 0xFF, 
-     44, 36, 35, 18,
-     0xFF, 0xFF}, 
-    // Board Type 3 (S3 zero) S3z
-    {0, 21,
-     10, 9, 8, 7,
-     3, 4, 5, 6,
-     11, 12},
-    // Board Type 4 (S3 mini alternate for new box) S3m
-    {0, 47,
-     2, 4, 12, 13,
-     44, 36, 35, 18,
-     0xFF, 16},   // Pin 16 is also 3V
-    // Board Type 5 (S2 mini Solo) S2o
-    {0, 15,
-     40, 38, 36, 34,
-     6, 4, 2, 1,
-     0xFF, 0xFF},
-    // Board Type 6 (C3 Solo) C3o
-    {9, 8,
-     9, 10, 20, 21,
-     0xFF, 0xFF, 0xFF, 0xFF,
-     0xFF, 0xFF},
-    // Board Type 7 (S3 mini Solo) S3o
-    {0, 47,
-     33, 37, 38, 34,
-     1, 3, 5, 6,
-     0xFF, 0xFF},
-};
-static uint8_t PIN_BUTTON, PIN_LED,
-    PIN_I2C0_SDA, PIN_I2C0_SCL, PIN_I2C0_GND, PIN_I2C0_VCC,
-    PIN_I2C1_SDA, PIN_I2C1_SCL, PIN_I2C1_GND, PIN_I2C1_VCC,
-    PIN_MORE_GND, PIN_MORE_VCC;
+static char BoardName[4] = "S3x";
 
 #define FREQ_COUNT   3
 static int freqCode =  0;
@@ -191,9 +138,6 @@ static rmt_data_t *stuffBits(rmt_data_t *data, int level) {
 //                                     magenta,  yellow,   cyan,     green,    blue
 static int COLORS[]                 = {0x0F0007, 0x00070F, 0x0F0700, 0x000F00, 0x170000};
 static unsigned long BLINK_MILLIS[] = {2000,     1000,     500,      200,      200     };
-#define LED_MONO  0
-#define LED_RGB   1
-#define LED_GRB   2
 
 void blinkLed(int command) {
     static int saved = COLOR_WHITE;
@@ -254,110 +198,28 @@ void setupBoard() {
 
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
-    switch (chip_info.model) {
-    case CHIP_ESP32S3:
-        my.dualCore = true;
-        my.ledRGB = LED_RGB;
-        pinMode(14, INPUT_PULLDOWN);
-        pinMode(15, INPUT_PULLDOWN);
-        pinMode(1, INPUT_PULLDOWN);
-        pinMode(17, INPUT_PULLUP);
-        if (digitalRead(1) == 1) {
-            my.boardType = BOARD_S3_ZERO;
-            my.ledRGB = LED_GRB;
-        }
-        else if (digitalRead(17) == 0) my.boardType = BOARD_S3_SOLO;
-        else if (digitalRead(14) == 1 and digitalRead(15) == 1) my.boardType = BOARD_S3_I2C;
-        else if (digitalRead(14) == 1 and digitalRead(15) == 0) my.boardType = BOARD_S3_NEWBOX2;
-        else if (digitalRead(14) == 0 and digitalRead(15) == 0) my.boardType = BOARD_S3_NEWBOX;
-        else {
-            my.boardType = BOARD_BAD;
-        }
-        break;
-
-    case CHIP_ESP32S2:
-        my.dualCore = false;
-        my.boardType = BOARD_S2_SOLO;
-        my.ledRGB = LED_MONO;
-        break;
-
-    case CHIP_ESP32C3:
-        my.dualCore = false;
-        my.boardType = BOARD_C3_SOLO;
-        my.ledRGB = LED_MONO;
-        break;
-
-    default:
-        my.boardType = BOARD_BAD;
-    }
-    strcpy(my.boardName, BoardName[my.boardType]);
-    Serial.printf("\nSoftware v%s Board Type %s(%d)\n",
-                  VERSION_STR, my.boardName, my.boardType);
-
-    pinMode(PIN_BUTTON    = PINS[my.boardType][_PIN_BUTTON],   INPUT_PULLUP);
-    pinMode(PIN_LED       = PINS[my.boardType][_PIN_LED],      OUTPUT);
-    if (my.ledRGB > LED_MONO) setupLED();
-
-    if (PINS[my.boardType][_PIN_I2C0_SDA] == DISABLE_I2C) {
-        my.hasI2C[0] = false;
-    } else {
-        my.hasI2C[0] = true;
-        PIN_I2C0_SDA                = PINS[my.boardType][_PIN_I2C0_SDA];
-        PIN_I2C0_SCL                = PINS[my.boardType][_PIN_I2C0_SCL];
-        PIN_I2C0_GND                = PINS[my.boardType][_PIN_I2C0_GND];
-        PIN_I2C0_VCC                = PINS[my.boardType][_PIN_I2C0_VCC];
-        if (PIN_I2C0_GND != 0xFF) {
-            pinMode(PIN_I2C0_GND, OUTPUT);
-            digitalWrite(PIN_I2C0_GND, 0);
-        }
-        if (PIN_I2C0_VCC != 0xFF) {
-            pinMode(PIN_I2C0_VCC, OUTPUT);
-            digitalWrite(PIN_I2C0_VCC, 1);
-        }
-        Wire.begin(PIN_I2C0_SDA, PIN_I2C0_SCL, LOW_BAUDRATE);
-        Wire.setTimeout(0);
-        Serial.printf("I2C0 started %d baud\n", Wire.getClock());
+    if (chip_info.model != CHIP_ESP32S3) {
+        // Error
     }
     
-    if (PINS[my.boardType][_PIN_I2C1_SDA] == DISABLE_I2C) {
-        my.hasI2C[1] = false;
-    } else {
-        my.hasI2C[1] = true;
-        PIN_I2C1_SDA                = PINS[my.boardType][_PIN_I2C1_SDA];
-        PIN_I2C1_SCL                = PINS[my.boardType][_PIN_I2C1_SCL];
-        PIN_I2C1_GND                = PINS[my.boardType][_PIN_I2C1_GND];
-        PIN_I2C1_VCC                = PINS[my.boardType][_PIN_I2C1_VCC];
-        if (PIN_I2C1_GND != 0xFF) {
-            pinMode(PIN_I2C1_GND, OUTPUT);
-            digitalWrite(PIN_I2C1_GND, 0);
-        }
-        if (PIN_I2C1_VCC != 0xFF) {
-            pinMode(PIN_I2C1_VCC, OUTPUT);
-            digitalWrite(PIN_I2C1_VCC, 1);
-        }
-        Wire1.begin(PIN_I2C1_SDA, PIN_I2C1_SCL, LOW_BAUDRATE);
-        Wire1.setTimeout(0);
-        Serial.printf("I2C1 started %d baud\n", Wire1.getClock());
-    }
+    Serial.printf("\nSoftware v%s Board Type S3x\n", VERSION_STR);
 
-    if ((PIN_MORE_GND = PINS[my.boardType][_PIN_MORE_GND]) != 0xFF) {
-        pinMode(PIN_MORE_GND, OUTPUT);
-        digitalWrite(PIN_MORE_GND, 0);
-    }
-    if ((PIN_MORE_VCC = PINS[my.boardType][_PIN_MORE_VCC]) != 0xFF) {
-        pinMode(PIN_MORE_VCC, OUTPUT);
-        digitalWrite(PIN_MORE_VCC, 1);
-    }
+    pinMode(PIN_I2C_GND, OUTPUT);
+    digitalWrite(PIN_I2C_GND, 0);
+    pinMode(PIN_I2C_VCC, OUTPUT);
+    digitalWrite(PIN_I2C_VCC, 1);
+    pinMode(PIN_BUTTON, INPUT_PULLUP);
+    setupLED();
+
+    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL, I2C_BAUDRATE);
+    Wire.setTimeout(0);
+    Serial.printf("I2C started %d baud\n", Wire.getClock());
     
     blinkLed(COLOR_WHITE);
 
     my.frequencyCode = FrequencyCode[0];
     my.sampleFrequency = Frequencies[my.frequencyCode];
-    if (my.boardType == BOARD_BAD) {
-        my.cycleMicroseconds = 100000;
-    } else {
-        setSamplingMode();
-    }
+    setSamplingMode();
 }
 
 #ifdef STATIC_STACK

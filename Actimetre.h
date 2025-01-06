@@ -1,7 +1,7 @@
 #ifndef ACTIMETRE_H
 #define ACTIMETRE_H
 
-#define VERSION_STR "411"
+#define VERSION_STR "500"
 
 //#define PROFILE_DISPLAY
 //#define LOG_DISPLAY
@@ -24,17 +24,10 @@ static void _test(int);
 #define ACTISERVER  "Actis"
 #define LONGPRESS_MILLIS  2000L
 
-#define MPU_BAUDRATE     400000
-#define DISPLAY_BAUDRATE 400000
-#define LOW_BAUDRATE     400000
+#define I2C_BAUDRATE      400000
 
-#define SSD1306_ADDR 0x3C
-#define MPU6050_ADDR 0x68
-#define WAI_6050     0x68
+#define MPU6500_ADDR 0x68
 #define WAI_6500     0x70
-
-#define LCD_H_RES 128
-#define LCD_V_RES 64
 
 #define MEASURE_SECS       60
 #define MAX_MISSED1        3
@@ -44,31 +37,16 @@ static void _test(int);
 #define HEADER_LENGTH    8     // epoch(3), count(1), rssi(high)+freq(low) (1), usec(3)
 #define BUFFER_LENGTH    (240 + HEADER_LENGTH)
 #if CONFIG_IDF_TARGET_ESP32S3
-#define QUEUE_SIZE       800
+#define QUEUE_SIZE       750
 #else
 #define QUEUE_SIZE       100
 #endif
 
 #define SAMPLE_ACCEL     1
-#define SAMPLE_GYRO      2
-#define SAMPLE_ALL       0
-extern int DATA_LENGTH[];
 
 // TYPES
 
 typedef enum {Core0Net, Core1I2C, CoreNumMax} CoreNum;
-
-typedef enum {
-    BOARD_BAD = 0,
-    BOARD_S3_I2C,
-    BOARD_S3_NEWBOX,
-    BOARD_S3_ZERO,
-    BOARD_S3_NEWBOX2,
-    BOARD_S2_SOLO,
-    BOARD_C3_SOLO,
-    BOARD_S3_SOLO,
-    BOARD_TYPES
-} BoardType;
 
 // GLOBALS
 
@@ -86,15 +64,10 @@ typedef struct {
 } SensorDesc;
 
 typedef struct {
-    BoardType boardType;
-    bool hasI2C[2];
-    int ledRGB;
-    char boardName[4];
     unsigned char mac[6];
     char macString[15];
     unsigned int clientId;
     char clientName[12];
-    bool dualCore;
 
     unsigned int serverId;
     char ssid[10];
@@ -106,12 +79,6 @@ typedef struct {
     unsigned long cycleMicroseconds;
     int I2Cbudget;
     
-    int displayPort;
-    SensorDesc sensor[2][2];
-    unsigned char sensorBits;
-    int nSensors;
-    char sensorList[10];
-
     float queueFill;
     int nMissed[2];
     float avgCycleTime[2];
@@ -124,13 +91,6 @@ typedef struct {
 extern MyInfo my;
 
 // INTERFACES
-
-// display.cpp
-void initDisplay();
-void displayTitle(char *title);
-void displaySensors();
-void displayLoop(int firstLoop);
-void writeLine(char *message);
 
 // reseau.cpp
 void netInit();
@@ -157,8 +117,6 @@ void setupBoard();
 void blinkLed(int color);
 void manageButton(int set);
 void setupCore0(void (*core0Loop)(void*));
-//void longPress();
-//void shortPress();
 
 //                      BBGGRR
 #define COLOR_WHITE   0x3F3F3F
