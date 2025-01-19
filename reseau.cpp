@@ -40,7 +40,7 @@ static bool sendMessage(byte *message) {
     
     int sent = 0;
     unsigned long timeout = micros();
-    while (sent < msgLength && micros_diff(micros(), timeout) < (my.dualCore ? 1000000L : my.cycleMicroseconds / 3)) {
+    while (sent < msgLength && micros_diff(micros(), timeout) < 1000000L) {
         sent += wifiClient.write(message + sent, msgLength - sent);
     }
 
@@ -51,12 +51,7 @@ static bool sendMessage(byte *message) {
             return false;
         } else {
             Serial.printf("Timeout sending data\n");
-            if (my.dualCore) {
-                writeLine("Timeout");
-                RESTART(2);
-            } else {
-                return false;
-            }
+            RESTART(2);
         }
     }
 
@@ -86,7 +81,7 @@ static byte heartbeatMessage[HEADER_LENGTH];
 static void sendHeartbeat() {
     static time_t heartbeat = time(NULL);
     if (time(NULL) != heartbeat) {
-        formatHeader(0, 0, heartbeatMessage, 0, 0);
+        formatHeader(heartbeatMessage, 0, 0);
         heartbeatMessage[5] |= 0x40;
         sendMessage(heartbeatMessage);
         heartbeat = time(NULL);
@@ -128,7 +123,6 @@ static void readRssi() {
 int isConnected() {
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("\nNetwork disconnected. Rebooting");
-        writeLine("WiFi lost");
         RESTART(2);
     }
 
@@ -148,10 +142,6 @@ static void netWorkOn(int index) {
             dump(msgQueueItems, QUEUE_SIZE * sizeof(int));
 #endif            
             ERROR_FATAL(error);
-        }
-        if (!sendMessage(msgQueueStore[index]) && !my.dualCore) {
-            Serial.println("Requeued message");
-            xQueueSendToFront(msgQueue, &index, 0);
         }
 
 #ifndef TIGHT_QUEUE        
@@ -213,13 +203,6 @@ static void Core0Loop(void *dummy_to_match_argument_signature) {
     }
 }
 
-void netWork() {
-    int index;
-    if (xQueueReceive(msgQueue, &index, 0) == pdTRUE) {
-        netWorkOn(index);
-    }
-}
-
 // Network initializations
 
 static void storeMacAddress() {
@@ -229,19 +212,16 @@ static void storeMacAddress() {
     sprintf(my.macString, "%02X%02X%02X%02X%02X%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     Serial.print("MAC address ");
     Serial.println(my.macString);
-    writeLine(my.macString);
 }
 
 static int scanNetworks() {
     int nScan;
     Serial.print("Scan... ");
-    writeLine("Scanning");
     nScan = WiFi.scanNetworks();
     Serial.printf("Done. Found %d APs\n", nScan);
 
     if (nScan <= 0) {
         Serial.println("\nCan't find AP. Rebooting");
-	writeLine("No AP");
         RESTART(2);
     }
     return nScan;
@@ -273,7 +253,6 @@ static void findActis(int nScan) {
     }
     if (nActis == 0) {
         Serial.println("\nCan't find server, rebooting");
-	writeLine("No Actis");
         RESTART(2);
     }
 }
@@ -289,7 +268,6 @@ static bool tryConnect(int index) {
     my.serverId = actisList[index].serverId;
     
     Serial.print(ssid);
-    writeLine(ssid);
     strcpy(my.ssid, ssid);
 
     char pass[] = "000animalerie";
@@ -302,7 +280,6 @@ static bool tryConnect(int index) {
         wait++;
         if (wait > 10) {
             Serial.println(" Failed!");
-            writeLine("Failed");
             return false;
         }
         delay(1000);
@@ -321,7 +298,6 @@ static bool tryConnect(int index) {
     trail = ipString.indexOf('.', trail + 1);
     
     strcpy(myIPstring, ipString.substring(trail + 1).c_str());
-    writeLine(myIPstring);
     readRssi();
     return true;
 }
@@ -342,13 +318,11 @@ static void buildQuery() {
 }
 
 static int getAssigned() {
-    writeLine("Req assign");
     Serial.printf("Socket to %s:%d\n", my.serverIP, SIDE_PORT);
     int err = wifiClient.connect(my.serverIP, SIDE_PORT);
     Serial.printf("connect() returned %d\n", err);
     if (err == 0) {
         Serial.println("Connection refused");
-	writeLine("Can't connect");
         return -1;
     }
     wifiClient.setNoDelay(false);
@@ -358,7 +332,6 @@ static int getAssigned() {
     err = wifiClient.write(assignQuery, QUERY_LENGTH);
     if (err < QUERY_LENGTH) {
 	Serial.printf("Sent %d bytes != %d\n", err, QUERY_LENGTH);
-	writeLine("Query failed");
         return -1;
     }
     
@@ -371,14 +344,11 @@ static int getAssigned() {
     
     if (assigned == -1) {
         Serial.println("No response from Actiserver");
-        writeLine("No response");
     } else if (assigned >= 100) {
         Serial.printf("Error relayed %d\n", assigned);
-        writeLine("Not assigned");
         assigned = -1;
     } else {
         Serial.printf("Assigned %d: %s\n", assigned, actisList[assigned].ssid);
-        writeLine(actisList[assigned].ssid);
     }
 
     return assigned;
@@ -390,11 +360,9 @@ static bool connectServer() {
     Serial.printf("connect() returned %d\n", err);
     if (err == 0) {
         Serial.println("Connection refused");
-        writeLine("Refused");
         return false;
     }
     wifiClient.setNoDelay(false);
-    writeLine("Connected");
     return true;
 }
 
@@ -402,16 +370,15 @@ static time_t getActimIdAndTime() {
     byte initMessage[INIT_LENGTH];
     Serial.print("Getting name and time ");
 
-    memcpy(initMessage, my.boardName, 3);
+    memcpy(initMessage, "S3x", 3);
     memcpy(initMessage + 3, my.mac, 6);
-    initMessage[9] = my.sensorBits;
+    initMessage[9] = 0x05;
     memcpy(initMessage + 10, VERSION_STR, 3);
 
     int err = 0;
     err = wifiClient.write(initMessage, INIT_LENGTH);
     if (err < INIT_LENGTH) {
 	Serial.printf("\nSent %d bytes != %d\n", err, INIT_LENGTH);
-	writeLine("Init failed");
         RESTART(2);
     }
     byte response[RESPONSE_LENGTH];
@@ -422,7 +389,6 @@ static time_t getActimIdAndTime() {
         err += wifiClient.read(response + err, RESPONSE_LENGTH - err);
         if ((time(NULL) - timeout) > 10) {
             Serial.println("No response from Actiserver");
-	    writeLine("No response");
             RESTART(2);
         }
     }
@@ -439,7 +405,6 @@ static time_t getActimIdAndTime() {
 
     char message[16];
     sprintf(message, "v%s>%04d  %03d", VERSION_STR, my.clientId, my.serverId);
-    displayTitle(message);
 
     return bootTime;
 }
@@ -473,7 +438,6 @@ void netInit() {
     }
     if (i == nActis) {
         Serial.println("Can't get assigned, choose first");
-	writeLine("Self-assign");
         indexChoice = 0;
         my.serverId = 0;
     }
@@ -486,7 +450,6 @@ void netInit() {
         Serial.println("Switch AP");
         if (!tryConnect(indexChoice)) {
             Serial.println("Can't connect to chosen server, rebooting");
-            writeLine("Can't connect");
             esp_wifi_stop();
             RESTART(2);
         }
@@ -505,13 +468,10 @@ void netInit() {
 #endif    
     if (msgQueue == 0) {
         Serial.println("Error creating queue, rebooting");
-        writeLine("OS error");
         RESTART(1);
     }
     my.queueFill = 0.0;
-
-    if (my.dualCore)
-        setupCore0(Core0Loop);
+    setupCore0(Core0Loop);
 }
 
 static void _test(int type) {

@@ -28,6 +28,7 @@ static void _test(int);
 
 #define MPU6500_ADDR 0x68
 #define WAI_6500     0x70
+#define SAMPLE_ACCEL 1
 
 #define MEASURE_SECS       60
 #define MAX_MISSED1        3
@@ -41,8 +42,6 @@ static void _test(int);
 #else
 #define QUEUE_SIZE       100
 #endif
-
-#define SAMPLE_ACCEL     1
 
 // TYPES
 
@@ -78,6 +77,8 @@ typedef struct {
     int sampleFrequency;
     unsigned long cycleMicroseconds;
     int I2Cbudget;
+
+    SensorDesc sensor;
     
     float queueFill;
     int nMissed[2];
@@ -90,6 +91,8 @@ typedef struct {
 
 extern MyInfo my;
 
+extern int DATA_LENGTH[];
+
 // INTERFACES
 
 // reseau.cpp
@@ -101,7 +104,7 @@ void netCore0(void *dummy_to_match_argument_signature);
 extern byte msgQueueStore[QUEUE_SIZE][BUFFER_LENGTH];
 
 // devices.cpp
-int readFifo(int port, int address, byte *buffer);
+int readFifo(byte *buffer);
 void clearSensors();
 void setSensorsFrequency();
 int setSamplingMode();
@@ -142,11 +145,13 @@ void clearCycleTime();
 // Actimetre.ino
 void dump(void *address, int size);
 void ERROR_REPORT(char *what);
-void ERROR_REPORT3(int port, int address, char *what);
+void ERROR_REPORT3(char *what);
 void ERROR_FATAL(char *where);
-void ERROR_FATAL3(int port, int address, char *where);
+void ERROR_FATAL3(char *where);
 extern bool FATAL_ERROR;
 void RESTART(int);
-int64_t formatHeader(int port, int address, unsigned char *message, int count, int timeOffset);
+int64_t formatHeader(unsigned char *message, int count, int timeOffset);
+
+#define writeLine(x)
 
 #endif //ACTIMETRE_H

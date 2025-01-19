@@ -21,11 +21,6 @@ void setup() {
     memset(&my, 0x00, sizeof(MyInfo));
     
     setupBoard();
-    if (my.boardType == BOARD_BAD) {
-        Serial.println("Unsupported board type");
-        writeLine("Unsupported");
-        RESTART(30);
-    }
     
 #ifdef LOG_STACK
     Serial.printf("Loop stack size %d\n", getArduinoLoopTaskStackSize());
@@ -33,22 +28,12 @@ void setup() {
 
     delay(100);
     deviceScanInit();
-
-    char title[16];
-    sprintf(title, "v%s", VERSION_STR);
-    displayTitle(title);
-    displaySensors();
-    
     netInit();
     clearSensors();
     blinkLed(COLOR_FREQ | 1);
 
 #ifdef STATIC_STACK
-    if (my.dualCore) {
-        my.core1Task = xTaskCreateStaticPinnedToCore(Core1Loop, "Core1", 16384, NULL, 2, core1Stack, &core1Task, 1);
-    } else {
-        my.core1Task = xTaskCreateStatic(Core1Loop, "Core", 16384, NULL, 2, core1Stack, &core1Task);
-    }
+    my.core1Task = xTaskCreateStaticPinnedToCore(Core1Loop, "Core1", 16384, NULL, 2, core1Stack, &core1Task, 1);
     if (my.core1Task == NULL) {
         Serial.println("Error starting Main task");
         ESP.restart();
@@ -58,7 +43,7 @@ void setup() {
 
 // MAIN LOOP
 
-int64_t formatHeader(int port, int address, byte *message, int count, int timeOffset) {
+int64_t formatHeader(byte *message, int count, int timeOffset) {
     time_t msgBootEpoch;
     int msgMicros;
     getTimeSinceBoot(&msgBootEpoch, &msgMicros);
@@ -73,14 +58,12 @@ int64_t formatHeader(int port, int address, byte *message, int count, int timeOf
 
     if (count > 63) {
         char error[64];
-        sprintf(error, "FIFO %d%c count %d > 64", 1 + port, 'A' + address, count);
+        sprintf(error, "FIFO count %d > 64", count);
         ERROR_FATAL(error);
     }
-    message[3] = count | (port << 7) | (address << 6);
-    message[4] = ((byte)my.rssi << 5) | ((byte)my.sensor[port][address].samplingMode << 3) | (byte)my.frequencyCode;
-    message[5] = (msgMicros >> 16) & 0x0F;
-    if (my.sensor[port][address].type == WAI_6500)
-        message[5] |= 0x80;
+    message[3] = count;
+    message[4] = ((byte)my.rssi << 5) | ((byte)my.sensor.samplingMode << 3) | (byte)my.frequencyCode;
+    message[5] = 0x80 | ((msgMicros >> 16) & 0x0F);
     message[6] = (msgMicros >> 8) & 0xFF;
     message[7] = msgMicros & 0xFF;
     return (int64_t)msgBootEpoch * 1000000 + msgMicros;
@@ -121,19 +104,13 @@ void loop()
         queueIndex(1);
     } else {
         int fifoState;
-        for (int port = 0; port <= 1; port++) {
-            for (int address = 0; address <= 1; address++) {
-                if (my.sensor[port][address].type) {
-                    do {
-                        int index = nextIndex();
-                        fifoState = readFifo(port, address, msgQueueStore[index]);
-                        if (fifoState > 0) {
-                            queueIndex(index);
-                        }
-                    } while (fifoState > 1);
-                }
+        do {
+            int index = nextIndex();
+            fifoState = readFifo(msgQueueStore[index]);
+            if (fifoState > 0) {
+                queueIndex(index);
             }
-        }
+        } while (fifoState > 1);
     }
     
     logCycleTime(Core1I2C, micros_diff(micros(), cycle_time));
@@ -163,15 +140,15 @@ void ERROR_REPORT(char *what) {
         what[62] = 0;
         msgLength = 62;
     }
-    formatHeader(0, 0, message, msgLength / 4, 0);
+    formatHeader(message, msgLength / 4, 0);
     strcpy((char*)message + HEADER_LENGTH, what);
     memset(message + HEADER_LENGTH + msgLength, 0, 4 - msgLength % 4);
     message[0] = 0xFF;
     queueIndex(index);
 }
 
-void ERROR_REPORT3(int port, int address, char *what) {
-    Serial.printf("REPORT(%d%c):%s\n", 1 + port, 'A' + address, what);
+void ERROR_REPORT3(char *what) {
+    Serial.printf("REPORT3:%s\n", what);
     
     int index = nextIndex();
     byte *message = msgQueueStore[index];
@@ -180,9 +157,9 @@ void ERROR_REPORT3(int port, int address, char *what) {
         what[252] = 0;
         msgLength = 255;
     }
-    formatHeader(port, address, message, msgLength / 4, 0);
+    formatHeader(message, msgLength / 4, 0);
     message[5] |= 0x10;
-    sprintf((char*)message + HEADER_LENGTH, "%d%c %s", 1 + port, 'A' + address, what);
+    strcpy((char*)message + HEADER_LENGTH, what);
     memset(message + HEADER_LENGTH + msgLength, 0, 4 - msgLength % 4);
     queueIndex(index);
 }
@@ -211,7 +188,7 @@ void ERROR_FATAL(char *where) {
 #endif    
 }
 
-void ERROR_FATAL3(int port, int address, char *where) {
+void ERROR_FATAL3(char *where) {
     int coreId = xPortGetCoreID();
     if (coreId == 1) { // no re-rentry for main loop
         while (FATAL_ERROR) delay(1);
@@ -230,7 +207,7 @@ void ERROR_FATAL3(int port, int address, char *where) {
     if (coreId == 1) processError();
     while (true) delay(1);
 #else
-    if (coreId == 1) ERROR_REPORT3(port, address, where);
+    if (coreId == 1) ERROR_REPORT3(where);
     RESTART(5);
 #endif    
 }

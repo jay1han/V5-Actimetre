@@ -37,10 +37,9 @@ static void switchFrequency() {
         freqCode = (freqCode + 1) % FREQ_COUNT;
         my.frequencyCode = FrequencyCode[freqCode];
         my.sampleFrequency = Frequencies[my.frequencyCode];
-    } while (setSamplingMode() > (my.dualCore ? MPU_BAUDRATE : (MPU_BAUDRATE / 2)));
+    } while (setSamplingMode() > I2C_BAUDRATE);
     
     setSensorsFrequency();
-    displaySensors();
     clearCycleTime();
     clearNextCycle();
     int kHz = my.sampleFrequency / 1000;
@@ -109,9 +108,9 @@ void manageButton(int set) {
 
 #define RMT_SIZE (8 * 3)
 static rmt_data_t RmtBuffer[RMT_SIZE];
-static void setupLED() {
-    Serial.printf("RGB pin %d init ", PIN_LED);
-    if (!rmtInit(PIN_LED, RMT_TX_MODE, RMT_MEM_NUM_BLOCKS_1, 20000000))
+static void setupLED(int pin) {
+    Serial.printf("RGB pin %d init ", pin);
+    if (!rmtInit(pin, RMT_TX_MODE, RMT_MEM_NUM_BLOCKS_1, 20000000))
         Serial.println("FAILED");
     else Serial.println("OK");
 }
@@ -145,9 +144,10 @@ void blinkLed(int command) {
     static bool state = false;
     static unsigned long blinkTime = millis();
     int color;
+    rmt_data_t *data = RmtBuffer;
 
     if (command == COLOR_BLINK) {
-        unsigned long blinkPeriod = (my.ledRGB != LED_MONO) ? 1000 : BLINK_MILLIS[frequency];
+        unsigned long blinkPeriod = 1000;
         if (my.isStopped) blinkPeriod = 50;
         if (millis_diff_10(millis(), blinkTime) > blinkPeriod) {
             blinkTime = millis();
@@ -173,22 +173,17 @@ void blinkLed(int command) {
         }
     }
     
-    if (my.ledRGB == LED_RGB) {
-        rmt_data_t *data = RmtBuffer;
-        data = stuffBits(data, color & 0xFF);
-        data = stuffBits(data, (color >> 8) & 0xFF);
-        data = stuffBits(data, (color >> 16) & 0xFF);
-        rmtWrite(PIN_LED, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
-    } else if (my.ledRGB == LED_GRB) {
-        rmt_data_t *data = RmtBuffer;
-        data = stuffBits(data, (color >> 8) & 0xFF);
-        data = stuffBits(data, color & 0xFF);
-        data = stuffBits(data, (color >> 16) & 0xFF);
-        rmtWrite(PIN_LED, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
-    } else {
-        if (state) digitalWrite(PIN_LED, 1);
-        else digitalWrite(PIN_LED, 0);
-    }
+    data = RmtBuffer;
+    data = stuffBits(data, color & 0xFF);
+    data = stuffBits(data, (color >> 8) & 0xFF);
+    data = stuffBits(data, (color >> 16) & 0xFF);
+    rmtWrite(PIN_LEDZ, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
+
+    data = RmtBuffer;
+    data = stuffBits(data, (color >> 8) & 0xFF);
+    data = stuffBits(data, color & 0xFF);
+    data = stuffBits(data, (color >> 16) & 0xFF);
+    rmtWrite(PIN_LEDM, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
 }
 
 void setupBoard() {
@@ -209,7 +204,8 @@ void setupBoard() {
     pinMode(PIN_I2C_VCC, OUTPUT);
     digitalWrite(PIN_I2C_VCC, 1);
     pinMode(PIN_BUTTON, INPUT_PULLUP);
-    setupLED();
+    setupLED(PIN_LEDZ);
+    setupLED(PIN_LEDM);
 
     Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL, I2C_BAUDRATE);
     Wire.setTimeout(0);
