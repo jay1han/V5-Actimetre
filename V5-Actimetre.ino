@@ -29,7 +29,7 @@ void setup() {
     delay(100);
     deviceScanInit();
     netInit();
-    clearSensors();
+    clearSensor();
     blinkLed(COLOR_FREQ | 1);
 
 #ifdef STATIC_STACK
@@ -62,7 +62,7 @@ int64_t formatHeader(byte *message, int count, int timeOffset) {
         ERROR_FATAL(error);
     }
     message[3] = count;
-    message[4] = ((byte)my.rssi << 5) | ((byte)my.sensor.samplingMode << 3) | (byte)my.frequencyCode;
+    message[4] = ((byte)my.rssi << 5) | (byte)my.frequencyCode | (SAMPLE_ACCEL_AND_GPIO << 3);
     message[5] = 0x80 | ((msgMicros >> 16) & 0x0F);
     message[6] = (msgMicros >> 8) & 0xFF;
     message[7] = msgMicros & 0xFF;
@@ -119,7 +119,6 @@ void loop()
 // UTILITY FUNCTION
 
 bool FATAL_ERROR = false;
-static char errorDisplay[32] = "";
 
 void RESTART(int seconds) {
     FATAL_ERROR = true;
@@ -172,11 +171,9 @@ void ERROR_FATAL(char *where) {
     
     FATAL_ERROR = true;
     Serial.printf("FATAL#%d\n", coreId);
+    Serial.println(where);
     
 #ifdef STOP_FATAL
-    memset(errorDisplay, 0, sizeof(errorDisplay));
-    sprintf(errorDisplay, "FATAL#%d", coreId);
-    strcpy(errorDisplay + 8, where);
     blinkLed(COLOR_RED);
     Wire.endTransmission(true);
     Wire1.endTransmission(true);
@@ -196,11 +193,9 @@ void ERROR_FATAL3(char *where) {
     
     FATAL_ERROR = true;
     Serial.printf("FATAL#%d\n", coreId);
+    Serial.println(where);
     
 #ifdef STOP_FATAL
-    memset(errorDisplay, 0, sizeof(errorDisplay));
-    sprintf(errorDisplay, "FATAL#%d", coreId);
-    strcpy(errorDisplay + 8, where);
     blinkLed(COLOR_RED);
     Wire.endTransmission(true);
     Wire1.endTransmission(true);
@@ -214,35 +209,20 @@ void ERROR_FATAL3(char *where) {
 
 static bool processError() {
     if (FATAL_ERROR) {
-        if (errorDisplay[0] != 0) {
-            Serial.printf("processError:%s\n", errorDisplay);
-            char *error = errorDisplay;
-            for (int line = 0; line < 2; line++) {
-                int linelen = 0;
-                while (error[linelen] != 0) linelen++;
-                writeLine(error);
-                error += linelen + 1;
-            }
-            memset(errorDisplay, 0, sizeof(errorDisplay));
-        }
         return true;
     }
     return false;
 }
 
 void dump(void *pointer, int size) {
+    char text[64] = "";
     byte *address = (byte*)pointer;
     for(int line = 0; line < size; line += 16) {
+        text[0] = 0;
         for (int i = 0; (i < 16) && (line + i < size); i++) {
-            Serial.printf("%02X ", address[line + i]);
+            sprintf(text + i * 3, "%02X ", address[line + i]);
         }
-        Serial.print("    ");
-        for (int i = 0; (i < 16) && (line + i < size); i++) {
-            byte c = address[line + i];
-            if (c < 0x20) c = '.';
-            Serial.printf("%c", c);
-        }
-        Serial.println();
+        Serial.println(text);
     }
 }
 

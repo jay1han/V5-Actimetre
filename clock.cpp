@@ -34,7 +34,7 @@ void waitNextCycle() {
 }
 
 void clearNextCycle() {
-    nextMicros = getAbsMicros();
+    nextMicros = getAbsMicros() + (int64_t)my.cycleMicroseconds;
 }
 
 void initClock(time_t bootEpoch) {

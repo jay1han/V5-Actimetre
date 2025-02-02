@@ -7,30 +7,30 @@
 #include "Actimetre.h"
 
 typedef enum {
-    PIN_BUTTON  = 0,
-    PIN_LEDZ    = 21,
-    PIN_LEDM    = 47,
+    PIN_BUTTON   = 0,
+    PIN_LEDZ     = 21,
+    PIN_LEDM     = 47,
 
-    PIN_I2C_SDA = 7,
-    PIN_I2C_SCL = 8,
-    PIN_I2C_GND = 9,
-    PIN_I2C_VCC = 10,
+    PIN_I2C_SDA  = 12,
+    PIN_I2C_SCL  = 13,
+    PIN_I2C_GND  = 11,
+    PIN_I2C_VCC  = 10,
 
-    PIN_CAM_S1  = 11,
-    PIN_CAM_S2  = 12,
-    PIN_CAM_A0  = 13,
+    PIN_CAM_1    = 6,
+    PIN_CAM_2    = 7,
+    PIN_CAM_REC  = 8,
     
-    PIN_SYNC    = 1
+    PIN_SYNC     = 1
 } PinName;
 
 // BOARD DEFINITION
 
 static char BoardName[4] = "S3x";
 
-#define FREQ_COUNT   3
+#define FREQ_COUNT   2
 static int freqCode =  0;
 static int Frequencies[8] = {100, 500, 1000, 2000, 4000, 8000};
-static int FrequencyCode[FREQ_COUNT] = {2, 4, 5};
+static int FrequencyCode[FREQ_COUNT] = {2, 4};
 
 static void switchFrequency() {
     do {
@@ -39,7 +39,8 @@ static void switchFrequency() {
         my.sampleFrequency = Frequencies[my.frequencyCode];
     } while (setSamplingMode() > I2C_BAUDRATE);
     
-    setSensorsFrequency();
+    setSensorFrequency();
+    clearSensor();
     clearCycleTime();
     clearNextCycle();
     int kHz = my.sampleFrequency / 1000;
@@ -177,18 +178,18 @@ void blinkLed(int command) {
     data = stuffBits(data, color & 0xFF);
     data = stuffBits(data, (color >> 8) & 0xFF);
     data = stuffBits(data, (color >> 16) & 0xFF);
-    rmtWrite(PIN_LEDZ, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
+    rmtWrite(PIN_LEDM, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
 
     data = RmtBuffer;
     data = stuffBits(data, (color >> 8) & 0xFF);
     data = stuffBits(data, color & 0xFF);
     data = stuffBits(data, (color >> 16) & 0xFF);
-    rmtWrite(PIN_LEDM, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
+    rmtWrite(PIN_LEDZ, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
 }
 
 void setupBoard() {
     Serial.setTxTimeoutMs(0);
-    Serial.begin(115200);
+    Serial.begin(2000000);
     delay(2000);
 
     esp_chip_info_t chip_info;
@@ -203,6 +204,7 @@ void setupBoard() {
     digitalWrite(PIN_I2C_GND, 0);
     pinMode(PIN_I2C_VCC, OUTPUT);
     digitalWrite(PIN_I2C_VCC, 1);
+    
     pinMode(PIN_BUTTON, INPUT_PULLUP);
     setupLED(PIN_LEDZ);
     setupLED(PIN_LEDM);
@@ -215,7 +217,6 @@ void setupBoard() {
 
     my.frequencyCode = FrequencyCode[0];
     my.sampleFrequency = Frequencies[my.frequencyCode];
-    setSamplingMode();
 }
 
 #ifdef STATIC_STACK

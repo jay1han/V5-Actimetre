@@ -25,17 +25,25 @@ static byte msgQueueItems[QUEUE_SIZE * sizeof(int)];
 static bool sendMessage(byte *message) {
     int epochSec = message[0] << 16 | message[1] << 8 | message[2];
     int count = message[3] & 0x3F;
+    
     int msgLength;
     if (message[0] == 0xFF) {
+        Serial.printf("REPORT message length %d ", msgLength);
         msgLength = HEADER_LENGTH + (count + 1) * 4;
-        Serial.printf("REPORT message length %d\n", msgLength);
     } else if (message[5] & 0x10) {
+        Serial.printf("DETAILED REPORT %d bytes ", (count + 1) * 4);
         msgLength = HEADER_LENGTH + (count + 1) * 4;
     } else if (message[5] & 0x40) {
+        Serial.print("HEARTBEAT ");
         msgLength = HEADER_LENGTH;
     } else {
-        int dataLength = DATA_LENGTH[(message[4] >> 3) & 0x03];
-        msgLength = HEADER_LENGTH + dataLength * count;
+//        dump(message, 8);
+        msgLength = HEADER_LENGTH + BYTES_IN_RECORD * count;
+    }
+    
+    if (msgLength > BUFFER_LENGTH) {
+        Serial.print("nope\n");
+        RESTART(2);
     }
     
     int sent = 0;
@@ -132,16 +140,20 @@ int isConnected() {
 static void netWorkOn(int index) {
     unsigned long startWork = micros();
 
-    if (my.isStopped) sendHeartbeat();
-    else {
+    if (my.isStopped) {
+        Serial.println("heartbeat");
+        sendHeartbeat();
+    } else {
         if (index <= 0 || index >= QUEUE_SIZE) {
             char error[16];
             sprintf(error, "0 %X", index);
             Serial.println(error);
-#ifdef STATIC_QUEUE            
+#ifdef LOG_QUEUE
             dump(msgQueueItems, QUEUE_SIZE * sizeof(int));
 #endif            
             ERROR_FATAL(error);
+        }
+        if (!sendMessage(msgQueueStore[index])) {
         }
 
 #ifndef TIGHT_QUEUE        
