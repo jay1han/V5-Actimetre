@@ -47,11 +47,7 @@ static void _test(int);
 
 #define HEADER_LENGTH    8     // epoch(3), count(1), rssi(high)+freq(low) (1), usec(3)
 #define BUFFER_LENGTH    (BYTES_IN_RECORD * MAX_MEASURES + HEADER_LENGTH)
-#if CONFIG_IDF_TARGET_ESP32S3
 #define QUEUE_SIZE       500
-#else
-#define QUEUE_SIZE       100
-#endif
 
 // TYPES
 
