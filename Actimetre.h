@@ -49,6 +49,23 @@ static void _test(int);
 #define BUFFER_LENGTH    (BYTES_IN_RECORD * MAX_MEASURES + HEADER_LENGTH)
 #define QUEUE_SIZE       500
 
+typedef enum {
+    PIN_BUTTON   = 0,
+    PIN_LEDZ     = 21,
+    PIN_LEDM     = 47,
+
+    PIN_I2C_SDA  = 13,
+    PIN_I2C_SCL  = 11,
+    PIN_I2C_GND  = 10,
+    PIN_I2C_VCC  = 12,
+
+    PIN_CAM_REC  = 8,
+    PIN_CAM_1    = 7,
+    PIN_CAM_2    = 6,
+    
+    PIN_SYNC     = 1
+} PinName;
+
 // TYPES
 
 typedef enum {Core0Net, Core1I2C, CoreNumMax} CoreNum;
@@ -143,6 +160,8 @@ extern bool FATAL_ERROR;
 void RESTART(int);
 int64_t formatHeader(unsigned char *message, int count, int timeOffset);
 
+// signal.cpp
 void readSignals(byte *buffer, int count);
+void signalTick();
 
 #endif //ACTIMETRE_H

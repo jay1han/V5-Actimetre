@@ -6,23 +6,6 @@
 #include <esp_chip_info.h>
 #include "Actimetre.h"
 
-typedef enum {
-    PIN_BUTTON   = 0,
-    PIN_LEDZ     = 21,
-    PIN_LEDM     = 47,
-
-    PIN_I2C_SDA  = 13,
-    PIN_I2C_SCL  = 11,
-    PIN_I2C_GND  = 10,
-    PIN_I2C_VCC  = 12,
-
-    PIN_CAM_REC  = 8,
-    PIN_CAM_1    = 7,
-    PIN_CAM_2    = 6,
-    
-    PIN_SYNC     = 1
-} PinName;
-
 // BOARD DEFINITION
 
 static char BoardName[4] = "S3x";
@@ -204,6 +187,10 @@ void setupBoard() {
     digitalWrite(PIN_I2C_GND, 0);
     pinMode(PIN_I2C_VCC, OUTPUT);
     digitalWrite(PIN_I2C_VCC, 1);
+
+    pinMode(PIN_CAM_REC, INPUT);
+    pinMode(PIN_CAM_1, INPUT);
+    pinMode(PIN_CAM_2, INPUT);
     
     pinMode(PIN_BUTTON, INPUT_PULLUP);
     setupLED(PIN_LEDZ);
