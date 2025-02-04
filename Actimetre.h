@@ -56,8 +56,8 @@ typedef enum {
 
     PIN_I2C_SDA  = 13,
     PIN_I2C_SCL  = 11,
-    PIN_I2C_GND  = 10,
-    PIN_I2C_VCC  = 12,
+    PIN_I2C_GND  = 12,
+    PIN_I2C_VCC  = 10,
 
     PIN_CAM_REC  = 8,
     PIN_CAM_1    = 7,
