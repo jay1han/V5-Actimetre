@@ -290,7 +290,7 @@ static bool tryConnect(int index) {
         Serial.printf(" %d", WiFi.status());
         blinkLed(COLOR_SWAP);
         wait++;
-        if (wait > 10) {
+        if (wait > 20) {
             Serial.println(" Failed!");
             return false;
         }
