@@ -39,10 +39,6 @@ void readSignals(byte *buffer, int take, int leave) {
             buffer[target] = signalFifo[tail];
         }
         portEXIT_CRITICAL(&timerMux);
-
-        if (fill > 0 || fill < -1)
-            Serial.printf("Signal FIFO take %d leave %d head %d tail %d fill %d\n",
-                          take, leave, head, tail0, fill);
     }
 }
 
