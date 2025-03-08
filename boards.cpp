@@ -10,31 +10,6 @@
 
 static char BoardName[4] = "S3x";
 
-#define FREQ_COUNT   2
-static int freqCode =  0;
-static int Frequencies[8] = {100, 500, 1000, 2000, 4000, 8000};
-static int FrequencyCode[FREQ_COUNT] = {2, 4};
-
-static void switchFrequency() {
-    do {
-        freqCode = (freqCode + 1) % FREQ_COUNT;
-        my.frequencyCode = FrequencyCode[freqCode];
-        my.sampleFrequency = Frequencies[my.frequencyCode];
-    } while (setSamplingMode() > I2C_BAUDRATE);
-    
-    setSensorFrequency();
-    clearSensor();
-    clearCycleTime();
-    clearNextCycle();
-    int kHz = my.sampleFrequency / 1000;
-    int rank = 0;
-    while (kHz > 0) {
-        rank ++;
-        kHz >>= 1;
-    }
-    blinkLed(COLOR_FREQ | rank);
-}
-
 // LED AND BUTTON
 
 static void longPress() {
@@ -46,7 +21,7 @@ static void longPress() {
 static void shortPress() {
     Serial.println("Button press");
     ERROR_REPORT("Button press");
-    switchFrequency();
+    // Do nothing
 }
 
 void manageButton(int set) {
@@ -171,8 +146,7 @@ void blinkLed(int command) {
 }
 
 void setupBoard() {
-    Serial.setTxTimeoutMs(0);
-    Serial.begin(2000000);
+    Serial.begin(115200);
     delay(2000);
 
     esp_chip_info_t chip_info;
@@ -199,24 +173,21 @@ void setupBoard() {
     Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL, I2C_BAUDRATE);
     Wire.setTimeout(0);
     Serial.printf("I2C started %d baud\n", Wire.getClock());
-    
+
+    setupSignals();
+
     blinkLed(COLOR_WHITE);
 
-    my.frequencyCode = FrequencyCode[0];
-    my.sampleFrequency = Frequencies[my.frequencyCode];
+    my.frequencyCode = 2;
+    my.sampleFrequency = 1000;
 }
 
-#ifdef STATIC_STACK
 static StaticTask_t core0Task;
 static byte core0Stack[16384];
-#endif
+
 void setupCore0(void (*core0Loop)(void*)) {
-#ifdef STATIC_STACK
     my.core0Task = xTaskCreateStaticPinnedToCore(core0Loop, "Core0", 16384, NULL, 2, core0Stack, &core0Task, 0);
     if (my.core0Task == NULL) {
-#else    
-    if (xTaskCreatePinnedToCore(core0Loop, "Core0", 16384, NULL, 2, &my.core0Task, 0) != pdPASS) {
-#endif        
         Serial.println("Error starting Network task");
         ESP.restart();
     }

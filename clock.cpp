@@ -29,7 +29,7 @@ static int timeRemaining() {
 void waitNextCycle() {
     blinkLed(COLOR_BLINK);
     my.upTime = (time(NULL) - my.bootTime) / 60;
-    while (timeRemaining() > 5) signalTick();
+    while (timeRemaining() > 5);
     nextMicros = getAbsMicros() + (int64_t)my.cycleMicroseconds;
 }
 

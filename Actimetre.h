@@ -1,20 +1,7 @@
 #ifndef ACTIMETRE_H
 #define ACTIMETRE_H
 
-#define VERSION_STR "500"
-
-//#define PROFILE_DISPLAY
-//#define LOG_DISPLAY
-//#define PROFILE_NETWORK
-//#define LOG_HEARTBEAT
-//#define LOG_STACK
-#define STATIC_STACK
-//#define STATIC_QUEUE
-//#define TIGHT_QUEUE
-#ifdef STATIC_QUEUE
-#define LOG_QUEUE
-#endif
-//#define STOP_FATAL
+#define VERSION_STR "501"
 
 static void _test(int);
 //#define TEST_LOCAL(t)     _test(t)
@@ -161,7 +148,7 @@ void RESTART(int);
 int64_t formatHeader(unsigned char *message, int count, int timeOffset);
 
 // signal.cpp
-void readSignals(byte *buffer, int count);
-void signalTick();
+void readSignals(byte *buffer, int take, int leave);
+void setupSignals();
 
 #endif //ACTIMETRE_H

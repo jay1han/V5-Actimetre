@@ -12,33 +12,25 @@ MyInfo my;
 
 // MAIN SETUP
 
-#ifdef STATIC_STACK
 static StaticTask_t core1Task;
 static StackType_t core1Stack[16384];
-#endif
 
 void setup() {
     memset(&my, 0x00, sizeof(MyInfo));
     
     setupBoard();
     
-#ifdef LOG_STACK
-    Serial.printf("Loop stack size %d\n", getArduinoLoopTaskStackSize());
-#endif    
-
     delay(100);
     deviceScanInit();
     netInit();
     clearSensor();
     blinkLed(COLOR_FREQ | 1);
 
-#ifdef STATIC_STACK
     my.core1Task = xTaskCreateStaticPinnedToCore(Core1Loop, "Core1", 16384, NULL, 2, core1Stack, &core1Task, 1);
     if (my.core1Task == NULL) {
         Serial.println("Error starting Main task");
         ESP.restart();
     }
-#endif        
 }
 
 // MAIN LOOP
@@ -77,7 +69,6 @@ static int nextIndex() {
     return index;
 }
 
-#ifdef STATIC_STACK
 static void Core1Loop(void *dummy_to_match_argument_signature) {
     Serial.printf("Core %d started\n", xPortGetCoreID());
     for (;;) {
@@ -87,9 +78,6 @@ static void Core1Loop(void *dummy_to_match_argument_signature) {
 }
 void loop() {}
 static void MainLoop()
-#else
-void loop()    
-#endif
 {
 //    TEST_LOCAL(1);
     if (processError()) return;
@@ -173,16 +161,8 @@ void ERROR_FATAL(char *where) {
     Serial.printf("FATAL#%d\n", coreId);
     Serial.println(where);
     
-#ifdef STOP_FATAL
-    blinkLed(COLOR_RED);
-    Wire.endTransmission(true);
-    Wire1.endTransmission(true);
-    if (coreId == 1) processError();
-    while (true) delay(1);
-#else
     if (coreId == 1) ERROR_REPORT(where);
     RESTART(5);
-#endif    
 }
 
 void ERROR_FATAL3(char *where) {
@@ -195,16 +175,8 @@ void ERROR_FATAL3(char *where) {
     Serial.printf("FATAL#%d\n", coreId);
     Serial.println(where);
     
-#ifdef STOP_FATAL
-    blinkLed(COLOR_RED);
-    Wire.endTransmission(true);
-    Wire1.endTransmission(true);
-    if (coreId == 1) processError();
-    while (true) delay(1);
-#else
     if (coreId == 1) ERROR_REPORT3(where);
     RESTART(5);
-#endif    
 }
 
 static bool processError() {

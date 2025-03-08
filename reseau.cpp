@@ -12,10 +12,8 @@
 static WiFiClient wifiClient;
 static QueueHandle_t msgQueue;
 
-#ifdef STATIC_QUEUE
 static StaticQueue_t msgQueueStatic;
 static byte msgQueueItems[QUEUE_SIZE * sizeof(int)];
-#endif
 
 #define INIT_LENGTH      13   // boardName = 3, MAC = 6, Sensors = 1, version = 3 : Total 13
 #define RESPONSE_LENGTH  6    // actimId = 2, time = 4 : Total 6
@@ -63,24 +61,6 @@ static bool sendMessage(byte *message) {
         }
     }
 
-#ifdef PROFILE_NETWORK
-    int port = (message[3] >> 7) & 1;
-    int address = (message[3] >> 6) & 1;
-    static int inSec[2][2];
-    static int thisSec[2][2];
-    static int nMessages[2][2];
-    nMessages[port][address] ++;
-    inSec[port][address] += count;
-    if (epochSec != thisSec[port][address]) {
-        Serial.printf("%d%c: %d samples in %d packets (mode %d, %d bytes), avg. %.1f/s\n",
-                      port + 1, address + 'A', inSec[port][address], nMessages[port][address],
-                      my.sensor[port][address].samplingMode, my.sensor[port][address].dataLength,
-                      (float)inSec[port][address] / nMessages[port][address]);
-        inSec[port][address] = 0;
-        nMessages[port][address] = 0;
-        thisSec[port][address] = epochSec;
-    }
-#endif
     return true;
 }
 
@@ -106,14 +86,10 @@ void queueIndex(int index) {
     }
 
     if (xQueueSend(msgQueue, &index, 0) != pdTRUE) {
-#ifdef TIGHT_QUEUE        
-        ERROR_FATAL("Queue full");
-#else        
         my.nMissed[Core0Net] ++;
         xQueueReset(msgQueue);
         Serial.println("Queue full, cleared");
         ERROR_REPORT("Queue full, cleared");
-#endif
     }
 }
 
@@ -148,15 +124,11 @@ static void netWorkOn(int index) {
             char error[16];
             sprintf(error, "0 %X", index);
             Serial.println(error);
-#ifdef LOG_QUEUE
-            dump(msgQueueItems, QUEUE_SIZE * sizeof(int));
-#endif            
             ERROR_FATAL(error);
         }
         if (!sendMessage(msgQueueStore[index])) {
         }
 
-#ifndef TIGHT_QUEUE        
         int availableSpaces = uxQueueSpacesAvailable(msgQueue);
         if (availableSpaces < QUEUE_SIZE / 5) {
             my.nMissed[Core0Net] ++;
@@ -167,16 +139,6 @@ static void netWorkOn(int index) {
         } else {
             my.queueFill = 100.0 * (QUEUE_SIZE - availableSpaces) / QUEUE_SIZE;
         }
-#endif        
-
-#ifdef LOG_QUEUE
-        static time_t timer = 0;
-        if (time(NULL) != timer) {
-            timer = time(NULL);
-            Serial.printf("===== Dump at %d\n", timer);
-            dump(msgQueueItems, 32 * sizeof(int));
-        }
-#endif        
     }
         
     int command = wifiClient.read();
@@ -473,11 +435,7 @@ void netInit() {
     time_t bootEpoch = getActimIdAndTime();
     initClock(bootEpoch);
 
-#ifdef STATIC_QUEUE    
     msgQueue = xQueueCreateStatic(QUEUE_SIZE, sizeof(int), msgQueueItems, &msgQueueStatic);
-#else    
-    msgQueue = xQueueCreate(QUEUE_SIZE, sizeof(int));
-#endif    
     if (msgQueue == 0) {
         Serial.println("Error creating queue, rebooting");
         RESTART(1);

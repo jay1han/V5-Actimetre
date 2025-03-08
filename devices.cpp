@@ -172,10 +172,12 @@ int readFifo(byte *message) {
     
     int timeOffset = 0;
     int moreToRead = fifoBytes - MAX_MEASURES * BYTES_IN_FIFO;
+    int bytesToLeave = moreToRead / BYTES_IN_FIFO;
     if (moreToRead > 0) {
         timeOffset = (moreToRead / BYTES_IN_FIFO) * (1000000 / my.sampleFrequency) ;
         fifoBytes = MAX_MEASURES * BYTES_IN_FIFO;
     } else {
+        bytesToLeave = 0;
         fifoBytes = (fifoBytes / BYTES_IN_FIFO - 1) * BYTES_IN_FIFO;
     }
     
@@ -231,7 +233,7 @@ int readFifo(byte *message) {
         return 0;
     }
 
-    readSignals(sigBuffer, fifoCount);
+    readSignals(sigBuffer, fifoCount, bytesToLeave);
 
     // Weave FIFO data and Signals
     byte *fifoPtr = fifoBuffer;
