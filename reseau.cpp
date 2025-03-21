@@ -26,16 +26,15 @@ static bool sendMessage(byte *message) {
     
     int msgLength;
     if (message[0] == 0xFF) {
-        Serial.printf("REPORT message length %d ", msgLength);
+        Serial.printf("REPORT message length %d\n", msgLength);
         msgLength = HEADER_LENGTH + (count + 1) * 4;
     } else if (message[5] & 0x10) {
-        Serial.printf("DETAILED REPORT %d bytes ", (count + 1) * 4);
+        Serial.printf("DETAILED REPORT %d bytes\n", (count + 1) * 4);
         msgLength = HEADER_LENGTH + (count + 1) * 4;
     } else if (message[5] & 0x40) {
-        Serial.print("HEARTBEAT ");
+        Serial.print("HEARTBEAT\n");
         msgLength = HEADER_LENGTH;
     } else {
-//        dump(message, 8);
         msgLength = HEADER_LENGTH + BYTES_IN_RECORD * count;
     }
     

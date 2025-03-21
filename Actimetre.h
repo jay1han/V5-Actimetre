@@ -1,7 +1,7 @@
 #ifndef ACTIMETRE_H
 #define ACTIMETRE_H
 
-#define VERSION_STR "501"
+#define VERSION_STR "502"
 
 static void _test(int);
 //#define TEST_LOCAL(t)     _test(t)
@@ -12,7 +12,7 @@ static void _test(int);
 #define ACTISERVER  "Actis"
 #define LONGPRESS_MILLIS  2000L
 
-#define I2C_BAUDRATE      348000
+#define I2C_BAUDRATE      400000
 
 #define MPU6500_ADDR 0x68
 #define WAI_6500     0x70
@@ -34,7 +34,7 @@ static void _test(int);
 
 #define HEADER_LENGTH    8     // epoch(3), count(1), rssi(high)+freq(low) (1), usec(3)
 #define BUFFER_LENGTH    (BYTES_IN_RECORD * MAX_MEASURES + HEADER_LENGTH)
-#define QUEUE_SIZE       500
+#define QUEUE_SIZE       200
 
 typedef enum {
     PIN_BUTTON   = 0,
@@ -49,6 +49,7 @@ typedef enum {
     PIN_CAM_REC  = 8,
     PIN_CAM_1    = 7,
     PIN_CAM_2    = 6,
+    PIN_INT      = 5,
     
     PIN_SYNC     = 1
 } PinName;
@@ -150,5 +151,6 @@ int64_t formatHeader(unsigned char *message, int count, int timeOffset);
 // signal.cpp
 void readSignals(byte *buffer, int take, int leave);
 void setupSignals();
+void clearSignals();
 
 #endif //ACTIMETRE_H

@@ -166,6 +166,7 @@ void setupBoard() {
     pinMode(PIN_CAM_REC, INPUT);
     pinMode(PIN_CAM_1, INPUT);
     pinMode(PIN_CAM_2, INPUT);
+    pinMode(PIN_INT, INPUT_PULLUP);
     
     pinMode(PIN_BUTTON, INPUT_PULLUP);
     setupLED(PIN_LEDZ);
@@ -174,8 +175,6 @@ void setupBoard() {
     Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL, I2C_BAUDRATE);
     Wire.setTimeout(0);
     Serial.printf("I2C started %d baud\n", Wire.getClock());
-
-    setupSignals();
 
     blinkLed(COLOR_WHITE);
 

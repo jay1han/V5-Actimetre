@@ -57,6 +57,7 @@ void clearSensor() {
     writeByte(0x6A, 0x40); // enable FIFO
     fifoBytes = readWord(MPU6500_FIFO_CNT_H) & 0x1FFF;
     Serial.printf(" -> %d bytes\n", fifoBytes);
+    clearSignals();
     clearNextCycle();
 }
 
@@ -107,7 +108,7 @@ static int detectSensor() {
     writeByte(0x1C, 0x08); // Accel range +/-4g
     writeByte(0x1D, 0x00); // A_FCHOICE_B = b0, A_DLPF = 0 (1kHz)
     writeByte(0x23, 0x08); // enable FIFO for accel only (6 bytes per sample)
-    writeByte(0x38, 0x11); // enable interrupts
+    writeByte(0x38, 0x01); // enable interrupts
     writeByte(0x6A, 0x40); // enable FIFO
 
     int fifoBytes = readWord(MPU6500_FIFO_CNT_H) & 0x1FFF;
@@ -224,8 +225,8 @@ int readFifo(byte *message) {
     
     int errorCode = fifoError(fifoBuffer, fifoBytes);
     if (errorCode >= 0) {
-        clearSensor();
-        my.nMissed[Core1I2C]++;
+//        clearSensor();
+//        my.nMissed[Core1I2C]++;
         char error[64];
         sprintf(error, "FIFO data 12/%d bytes 0x%X", fifoBytes, errorCode);
         Serial.println(error);

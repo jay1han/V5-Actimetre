@@ -12,24 +12,24 @@ static long int elapsed(struct timeval *from) {
     return (now.tv_sec - from->tv_sec) * 1e6 + (now.tv_usec - from->tv_usec);
 }
 
-static volatile SemaphoreHandle_t timerSem;
-static portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
+static portMUX_TYPE signalMux = portMUX_INITIALIZER_UNLOCKED;
 
 void readSignals(byte *buffer, int take, int leave) {
+    taskENTER_CRITICAL(&signalMux);
     if (tail == head) {
+        taskEXIT_CRITICAL(&signalMux);
         Serial.println("No signal data");
-        memset(buffer, signalFifo[tail], take);
+        memset(buffer, 0, take);
     } else {
-        portENTER_CRITICAL(&timerMux);
         int target = 0;
         int count = head - tail;
         if (count < 0) count += FIFO_SIZE;
         int fill = take + leave - count;
-        int tail0 = tail;
+        byte tail_data = signalFifo[tail];
 
         if (fill > 0) {
             for (; target < fill; target++)
-                buffer[target] = signalFifo[tail];
+                buffer[target] = tail_data;
         } else if (fill < -1) {
             tail = tail - fill - 1;
         }
@@ -38,8 +38,18 @@ void readSignals(byte *buffer, int take, int leave) {
             if (tail >= FIFO_SIZE) tail -= FIFO_SIZE;
             buffer[target] = signalFifo[tail];
         }
-        portEXIT_CRITICAL(&timerMux);
+        taskEXIT_CRITICAL(&signalMux);
+        if (fill > 0)
+            Serial.printf("Filled %d bytes\n", fill);
+        if (fill < -1)
+            Serial.printf("Left %d bytes\n", - (fill + 1));
     }
+}
+
+void clearSignals() {
+    taskENTER_CRITICAL(&signalMux);
+    tail = head;
+    taskEXIT_CRITICAL(&signalMux);
 }
 
 void signalISR() {
@@ -48,18 +58,15 @@ void signalISR() {
     if (digitalRead(PIN_CAM_1)) signal |= 2;
     if (digitalRead(PIN_CAM_2)) signal |= 4;
 
-    portENTER_CRITICAL_ISR(&timerMux);
     signalFifo[head] = signal;
     if (++head >= FIFO_SIZE) head = 0;
     if (head == tail) {
         if (++tail >= FIFO_SIZE) tail = 0;
     }
-    portEXIT_CRITICAL_ISR(&timerMux);
 }
 
 void setupSignals() {
-    timerSem = xSemaphoreCreateBinary();
-    hw_timer_t *timer = timerBegin(1000000);
-    timerAttachInterrupt(timer, &signalISR);
-    timerAlarm(timer, 997, true, 0);
+    attachInterrupt(PIN_INT, signalISR, FALLING);
+
+    Serial.println("Signal ISR attached");
 }    

@@ -23,7 +23,6 @@ void setup() {
     delay(100);
     deviceScanInit();
     netInit();
-    clearSensor();
     blinkLed(COLOR_FREQ | 1);
 
     my.core1Task = xTaskCreateStaticPinnedToCore(Core1Loop, "Core1", 16384, NULL, 2, core1Stack, &core1Task, 1);
@@ -71,6 +70,8 @@ static int nextIndex() {
 
 static void Core1Loop(void *dummy_to_match_argument_signature) {
     Serial.printf("Core %d started\n", xPortGetCoreID());
+    setupSignals();
+    clearSensor();
     for (;;) {
         MainLoop();
         delayMicroseconds(1);
