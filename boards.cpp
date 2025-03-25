@@ -147,7 +147,7 @@ void blinkLed(int command) {
 
 void setupBoard() {
     Serial.setTxTimeoutMs(0);
-    Serial.begin(921600);
+    Serial.begin(115200);
     delay(2000);
 
     esp_chip_info_t chip_info;
@@ -158,25 +158,31 @@ void setupBoard() {
     
     Serial.printf("\nSoftware v%s Board Type S3x\n", VERSION_STR);
 
-    pinMode(PIN_I2C_GND, OUTPUT);
-    digitalWrite(PIN_I2C_GND, 0);
-    pinMode(PIN_I2C_VCC, OUTPUT);
-    digitalWrite(PIN_I2C_VCC, 1);
-
     pinMode(PIN_CAM_REC, INPUT);
     pinMode(PIN_CAM_1, INPUT);
     pinMode(PIN_CAM_2, INPUT);
-    pinMode(PIN_INT, INPUT_PULLUP);
+    pinMode(PIN_SOURCE, OUTPUT);
+    digitalWrite(PIN_SOURCE, 0);
+    pinMode(PIN_PULLUP, OUTPUT);
+    digitalWrite(PIN_PULLUP, 1);
+    pinMode(PIN_GATE, INPUT);
+    pinMode(PIN_DRAIN, INPUT_PULLUP);
     
     pinMode(PIN_BUTTON, INPUT_PULLUP);
     setupLED(PIN_LEDZ);
     setupLED(PIN_LEDM);
 
-    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL, I2C_BAUDRATE);
-    Wire.setTimeout(0);
-    Serial.printf("I2C started %d baud\n", Wire.getClock());
-
     blinkLed(COLOR_WHITE);
+
+    pinMode(PIN_I2C1_GND, OUTPUT);
+    digitalWrite(PIN_I2C1_GND, 0);
+    pinMode(PIN_I2C1_VCC, OUTPUT);
+    digitalWrite(PIN_I2C1_VCC, 1);
+
+      pinMode(PIN_I2C2_GND, OUTPUT);
+      digitalWrite(PIN_I2C2_GND, 0);
+      pinMode(PIN_I2C2_VCC, OUTPUT);
+      digitalWrite(PIN_I2C2_VCC, 1);
 
     my.frequencyCode = 2;
     my.sampleFrequency = 1000;

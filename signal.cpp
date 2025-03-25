@@ -66,7 +66,7 @@ void signalISR() {
 }
 
 void setupSignals() {
-    attachInterrupt(PIN_INT, signalISR, FALLING);
+    attachInterrupt(PIN_DRAIN, signalISR, FALLING);
 
     Serial.println("Signal ISR attached");
 }    

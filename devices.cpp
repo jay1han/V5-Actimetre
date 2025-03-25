@@ -87,16 +87,16 @@ static int detectSensor() {
         writeByte(0x6B, 0x80);    // Reset
     } else {
         Serial.println("No device found");
-        RESTART(2);
+        return 0;
     }
     delay(100);
     
     byte sensorType = readByte(0x75);
-    Serial.printf(" WAI=0x%02X, ", sensorType);
+    Serial.printf(" WAI=0x%02X,", sensorType);
     if (sensorType == 0x74) sensorType = WAI_6500;
     if (sensorType != WAI_6500 && sensorType != WAI_6050) {
-        Serial.println("BAD. Rebooting");
-        RESTART(2);
+        Serial.println("Bad device ID");
+        return 0;
     }
 
     my.lastMessage = 0;
@@ -257,10 +257,23 @@ int readFifo(byte *message) {
 void deviceScanInit() {
     Serial.print("Checking I2C devices\n");
 
+    Wire.begin(PIN_I2C1_SDA, PIN_I2C1_SCL, I2C_BAUDRATE);
+    Wire.setTimeout(0);
+        Serial.printf("I2C main started %d baud\n", Wire.getClock());
+
     if (!detectSensor()) {
-        Serial.println("No sensors found, rebooting");
-        blinkLed(COLOR_RED);
-        RESTART(5);
+      Wire.end();
+    delay(100);
+      Wire.begin(PIN_I2C2_SDA, PIN_I2C2_SCL, I2C_BAUDRATE);
+      Wire.setTimeout(0);
+      Serial.printf("I2C aux started %d baud\n", Wire.getClock());
+
+      if (!detectSensor()) {
+      Wire.end();
+          Serial.println("No sensors found, rebooting");
+          blinkLed(COLOR_RED);
+          RESTART(5);
+      }
     }
 
     int budget = setSamplingMode();

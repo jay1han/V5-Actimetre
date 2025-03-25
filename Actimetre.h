@@ -1,7 +1,7 @@
 #ifndef ACTIMETRE_H
 #define ACTIMETRE_H
 
-#define VERSION_STR "502"
+#define VERSION_STR "509"
 
 static void _test(int);
 //#define TEST_LOCAL(t)     _test(t)
@@ -17,8 +17,7 @@ static void _test(int);
 #define MPU6500_ADDR 0x68
 #define WAI_6500     0x70
 #define WAI_6050     0x68
-#define SAMPLE_ACCEL          1
-#define SAMPLE_ACCEL_AND_GPIO 0
+#define SAMPLE_ACCEL 1
 
 #define MEASURE_SECS       60
 #define MAX_MISSED1        3
@@ -34,24 +33,30 @@ static void _test(int);
 
 #define HEADER_LENGTH    8     // epoch(3), count(1), rssi(high)+freq(low) (1), usec(3)
 #define BUFFER_LENGTH    (BYTES_IN_RECORD * MAX_MEASURES + HEADER_LENGTH)
-#define QUEUE_SIZE       200
+#define QUEUE_SIZE       100
 
 typedef enum {
     PIN_BUTTON   = 0,
     PIN_LEDZ     = 21,
     PIN_LEDM     = 47,
 
-    PIN_I2C_SDA  = 13,
-    PIN_I2C_SCL  = 11,
-    PIN_I2C_GND  = 12,
-    PIN_I2C_VCC  = 10,
+    PIN_I2C1_SDA  = 33,
+    PIN_I2C1_SCL  = 37,
+    PIN_I2C1_GND  = 38,
+    PIN_I2C1_VCC  = 34,
+
+    PIN_I2C2_SDA = 13,
+    PIN_I2C2_SCL = 11,
+    PIN_I2C2_GND = 12,
+    PIN_I2C2_VCC = 10,
 
     PIN_CAM_REC  = 8,
     PIN_CAM_1    = 7,
     PIN_CAM_2    = 6,
-    PIN_INT      = 5,
-    
-    PIN_SYNC     = 1
+    PIN_SOURCE   = 5,
+    PIN_GATE     = 17,
+    PIN_DRAIN    = 21,
+    PIN_PULLUP   = 15
 } PinName;
 
 // TYPES

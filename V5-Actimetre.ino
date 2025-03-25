@@ -53,8 +53,8 @@ int64_t formatHeader(byte *message, int count, int timeOffset) {
         ERROR_FATAL(error);
     }
     message[3] = count;
-    message[4] = ((byte)my.rssi << 5) | (byte)my.frequencyCode | (SAMPLE_ACCEL_AND_GPIO << 3);
-    message[5] = 0x80 | ((msgMicros >> 16) & 0x0F);
+    message[4] = ((byte)my.rssi << 5) | (byte)my.frequencyCode | (SAMPLE_ACCEL << 3);
+    message[5] = 0xA0 | ((msgMicros >> 16) & 0x0F);
     message[6] = (msgMicros >> 8) & 0xFF;
     message[7] = msgMicros & 0xFF;
     return (int64_t)msgBootEpoch * 1000000 + msgMicros;
