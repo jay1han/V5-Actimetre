@@ -138,11 +138,11 @@ void blinkLed(int command) {
     data = stuffBits(data, (color >> 16) & 0xFF);
     rmtWrite(PIN_LEDM, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
 
-    data = RmtBuffer;
-    data = stuffBits(data, (color >> 8) & 0xFF);
-    data = stuffBits(data, color & 0xFF);
-    data = stuffBits(data, (color >> 16) & 0xFF);
-    rmtWrite(PIN_LEDZ, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
+    // data = RmtBuffer;
+    // data = stuffBits(data, (color >> 8) & 0xFF);
+    // data = stuffBits(data, color & 0xFF);
+    // data = stuffBits(data, (color >> 16) & 0xFF);
+    // rmtWrite(PIN_LEDZ, RmtBuffer, RMT_SIZE, RMT_WAIT_FOR_EVER);
 }
 
 void setupBoard() {
@@ -161,28 +161,20 @@ void setupBoard() {
     pinMode(PIN_CAM_REC, INPUT);
     pinMode(PIN_CAM_1, INPUT);
     pinMode(PIN_CAM_2, INPUT);
-    pinMode(PIN_SOURCE, OUTPUT);
-    digitalWrite(PIN_SOURCE, 0);
+
     pinMode(PIN_PULLUP, OUTPUT);
     digitalWrite(PIN_PULLUP, 1);
+    pinMode(PIN_PULLDOWN, OUTPUT);
+    digitalWrite(PIN_PULLDOWN, 0);
+
     pinMode(PIN_GATE, INPUT);
     pinMode(PIN_DRAIN, INPUT_PULLUP);
     
     pinMode(PIN_BUTTON, INPUT_PULLUP);
-    setupLED(PIN_LEDZ);
+//    setupLED(PIN_LEDZ);
     setupLED(PIN_LEDM);
 
     blinkLed(COLOR_WHITE);
-
-    pinMode(PIN_I2C1_GND, OUTPUT);
-    digitalWrite(PIN_I2C1_GND, 0);
-    pinMode(PIN_I2C1_VCC, OUTPUT);
-    digitalWrite(PIN_I2C1_VCC, 1);
-
-      pinMode(PIN_I2C2_GND, OUTPUT);
-      digitalWrite(PIN_I2C2_GND, 0);
-      pinMode(PIN_I2C2_VCC, OUTPUT);
-      digitalWrite(PIN_I2C2_VCC, 1);
 
     my.frequencyCode = 2;
     my.sampleFrequency = 1000;

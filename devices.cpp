@@ -257,23 +257,15 @@ int readFifo(byte *message) {
 void deviceScanInit() {
     Serial.print("Checking I2C devices\n");
 
-    Wire.begin(PIN_I2C1_SDA, PIN_I2C1_SCL, I2C_BAUDRATE);
+    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL, I2C_BAUDRATE);
     Wire.setTimeout(0);
         Serial.printf("I2C main started %d baud\n", Wire.getClock());
 
     if (!detectSensor()) {
       Wire.end();
-    delay(100);
-      Wire.begin(PIN_I2C2_SDA, PIN_I2C2_SCL, I2C_BAUDRATE);
-      Wire.setTimeout(0);
-      Serial.printf("I2C aux started %d baud\n", Wire.getClock());
-
-      if (!detectSensor()) {
-      Wire.end();
-          Serial.println("No sensors found, rebooting");
-          blinkLed(COLOR_RED);
-          RESTART(5);
-      }
+      Serial.println("No sensors found, rebooting");
+      blinkLed(COLOR_RED);
+      RESTART(5);
     }
 
     int budget = setSamplingMode();

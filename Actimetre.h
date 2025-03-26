@@ -1,7 +1,7 @@
 #ifndef ACTIMETRE_H
 #define ACTIMETRE_H
 
-#define VERSION_STR "509"
+#define VERSION_STR "510"
 
 static void _test(int);
 //#define TEST_LOCAL(t)     _test(t)
@@ -37,26 +37,20 @@ static void _test(int);
 
 typedef enum {
     PIN_BUTTON   = 0,
-    PIN_LEDZ     = 21,
+//    PIN_LEDZ     = 21,
     PIN_LEDM     = 47,
 
-    PIN_I2C1_SDA  = 33,
-    PIN_I2C1_SCL  = 37,
-    PIN_I2C1_GND  = 38,
-    PIN_I2C1_VCC  = 34,
+    PIN_I2C_SDA  = 37,
+    PIN_I2C_SCL  = 33,
 
-    PIN_I2C2_SDA = 13,
-    PIN_I2C2_SCL = 11,
-    PIN_I2C2_GND = 12,
-    PIN_I2C2_VCC = 10,
-
-    PIN_CAM_REC  = 8,
-    PIN_CAM_1    = 7,
-    PIN_CAM_2    = 6,
-    PIN_SOURCE   = 5,
+    PIN_CAM_REC  = 2,
+    PIN_CAM_1    = 4,
+    PIN_CAM_2    = 12,
     PIN_GATE     = 17,
-    PIN_DRAIN    = 21,
-    PIN_PULLUP   = 15
+    PIN_DRAIN    = 34,
+
+    PIN_PULLUP   = 14,
+    PIN_PULLDOWN = 15
 } PinName;
 
 // TYPES
