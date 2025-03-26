@@ -20,7 +20,6 @@ void setup() {
     
     setupBoard();
     
-    delay(100);
     deviceScanInit();
     netInit();
     blinkLed(COLOR_FREQ | 1);

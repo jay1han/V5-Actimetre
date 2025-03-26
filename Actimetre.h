@@ -1,7 +1,9 @@
 #ifndef ACTIMETRE_H
 #define ACTIMETRE_H
 
-#define VERSION_STR "510"
+#include <Wire.h>
+
+#define VERSION_STR "511"
 
 static void _test(int);
 //#define TEST_LOCAL(t)     _test(t)
@@ -33,12 +35,15 @@ static void _test(int);
 
 #define HEADER_LENGTH    8     // epoch(3), count(1), rssi(high)+freq(low) (1), usec(3)
 #define BUFFER_LENGTH    (BYTES_IN_RECORD * MAX_MEASURES + HEADER_LENGTH)
-#define QUEUE_SIZE       100
+#define QUEUE_SIZE       200
 
 typedef enum {
     PIN_BUTTON   = 0,
 //    PIN_LEDZ     = 21,
     PIN_LEDM     = 47,
+
+    PIN_I2C0_SDA  = 13,
+    PIN_I2C0_SCL  = 11,
 
     PIN_I2C_SDA  = 37,
     PIN_I2C_SCL  = 33,
@@ -99,6 +104,7 @@ void netCore0(void *dummy_to_match_argument_signature);
 extern byte msgQueueStore[QUEUE_SIZE][BUFFER_LENGTH];
 
 // devices.cpp
+extern TwoWire &wire;
 int readFifo(byte *buffer);
 void clearSensor();
 void setSensorFrequency();
