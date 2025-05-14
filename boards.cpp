@@ -179,7 +179,7 @@ void setupBoard() {
     my.frequencyCode = 2;
     my.sampleFrequency = 1000;
     
-        delay(100);
+    delay(100);
 }
 
 static StaticTask_t core0Task;

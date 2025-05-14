@@ -51,7 +51,7 @@ static int readWord(int memory) {
 // SENSORS (MPU-6050)
 
 void clearSensor() {
-     int fifoBytes = readWord(MPU6500_FIFO_CNT_H) & 0x1FFF;
+    int fifoBytes = readWord(MPU6500_FIFO_CNT_H) & 0x1FFF;
      
     Serial.printf("Reset sensor FIFO %d", fifoBytes);
     
@@ -228,8 +228,8 @@ int readFifo(byte *message) {
     
     int errorCode = fifoError(fifoBuffer, fifoBytes);
     if (errorCode >= 0) {
-//        clearSensor();
-//        my.nMissed[Core1I2C]++;
+        clearSensor();
+        my.nMissed[Core1I2C]++;
         char error[64];
         sprintf(error, "FIFO data 12/%d bytes 0x%X", fifoBytes, errorCode);
         Serial.println(error);
@@ -262,23 +262,23 @@ void deviceScanInit() {
 
     wire.begin(PIN_I2C_SDA, PIN_I2C_SCL, I2C_BAUDRATE);
     wire.setTimeout(0);
-        Serial.printf("I2C main started %d baud\n", wire.getClock());
+    Serial.printf("I2C main started %d baud\n", wire.getClock());
 
     if (!detectSensor()) {
-      wire.end();
-      delay(100);
-      wire = Wire1;
-    wire.begin(PIN_I2C0_SDA, PIN_I2C0_SCL, I2C_BAUDRATE);
-    wire.setTimeout(0);
+        wire.end();
+        delay(100);
+        wire = Wire1;
+        wire.begin(PIN_I2C0_SDA, PIN_I2C0_SCL, I2C_BAUDRATE);
+        wire.setTimeout(0);
         Serial.printf("I2C old-type started %d baud\n", wire.getClock());
 
-    if (!detectSensor()) {
-      wire.end();
+        if (!detectSensor()) {
+            wire.end();
 
-      Serial.println("No sensors found, rebooting");
-      blinkLed(COLOR_RED);
-      RESTART(5);
-    }
+            Serial.println("No sensors found, rebooting");
+            blinkLed(COLOR_RED);
+            RESTART(5);
+        }
     }
 
     int budget = setSamplingMode();

@@ -3,7 +3,7 @@
 
 #include <Wire.h>
 
-#define VERSION_STR "511"
+#define VERSION_STR "512"
 
 static void _test(int);
 //#define TEST_LOCAL(t)     _test(t)
